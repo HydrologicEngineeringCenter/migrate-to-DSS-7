@@ -1,0 +1,69 @@
+import org.gradle.internal.os.OperatingSystem
+
+plugins {
+    id 'java'
+}
+
+group 'org.example'
+version '1.0-SNAPSHOT'
+
+configurations {
+    windows_x64
+}
+
+repositories {
+    maven {
+        url "https://www.hec.usace.army.mil/nexus/repository/maven-public/"
+    }
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'commons-cli:commons-cli:1.4'
+    implementation 'mil.army.usace.hec:hec:6.0.0.51'
+    implementation 'mil.army.usace.hec:heclib:6.0.0.51'
+    runtimeOnly 'com.rmanet:rma:6.0.0.51'
+    windows_x64 'mil.army.usace.hec:javaHeclib:7-HK@zip'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.4.0'
+}
+
+jar {
+    from {
+        configurations.runtime.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
+
+task getNatives(type: Copy){
+    if (OperatingSystem.current().isWindows()) {
+        configurations.windows_x64.asFileTree.each {
+            from(zipTree(it))
+            into "$projectDir/x64"
+        }
+    } else if (OperatingSystem.current().isLinux()){
+        configurations.linux_x64.asFileTree.each {
+            from(tarTree(it))
+            into "$projectDir/x64"
+        }
+    } else if (OperatingSystem.current().isMacOsX()) {
+        configurations.macOS_x64.asFileTree.each {
+            from(zipTree(it))
+            into "$projectDir/x64"
+        }
+    }
+}
+
+task refreshNatives {
+    destroyables.register("$projectDir/x64")
+    doLast {
+        delete("$projectDir/x64")
+    }
+}
+refreshNatives.finalizedBy(getNatives)
+
+test {
+    if (OperatingSystem.current().isWindows()) {
+        useJUnitPlatform()
+        ignoreFailures = true
+        jvmArgs = ["-Djava.library.path=${projectDir}/x64"]
+    }
+}
