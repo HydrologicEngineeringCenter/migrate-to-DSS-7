@@ -1,7 +1,7 @@
 Migrate-To-DSS-7
 ===================
 
-Recursively searches a directory DSS files, and migrates them to version 7.
+Recursively searches a directory for DSS files and migrates them to version 7.
 
 ## Downloading binaries
 This repository uses native dependencies that must be downloaded.
