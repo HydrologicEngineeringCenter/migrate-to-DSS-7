@@ -60,6 +60,7 @@ public class Dss7Migrater {
                 manager.close();
                 logger.info(() -> String.format("Migrated file: %s", pathToFile));
                 support.firePropertyChange("fileMigrated", pathToFile, pathToFile);
+                return;
             }
 
             int status = utilities.convertVersion(pathToTempFile);
