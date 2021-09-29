@@ -9,6 +9,8 @@ version '1.0-SNAPSHOT'
 
 configurations {
     windows_x64
+    linux_x64
+    macOS_x64
 }
 
 repositories {
@@ -24,6 +26,8 @@ dependencies {
     implementation 'mil.army.usace.hec:heclib:6.0.0.51'
     runtimeOnly 'com.rmanet:rma:6.0.0.51'
     windows_x64 'mil.army.usace.hec:javaHeclib:7-HK@zip'
+    linux_x64 'mil.army.usace.hec:javaHeclib:7-HK:linux@tar.gz'
+    macOS_x64 'mil.army.usace.hec:javaHeclib:7-HK-macOSx@zip'
     testImplementation 'org.junit.jupiter:junit-jupiter:5.4.0'
 }
 
