@@ -22,12 +22,20 @@ repositories {
 
 dependencies {
     implementation 'commons-cli:commons-cli:1.4'
-    implementation 'mil.army.usace.hec:hec:6.0.0.51'
-    implementation 'mil.army.usace.hec:heclib:6.0.0.51'
-    runtimeOnly 'com.rmanet:rma:6.0.0.51'
-    windows_x64 'mil.army.usace.hec:javaHeclib:7-HK@zip'
-    linux_x64 'mil.army.usace.hec:javaHeclib:7-HK:linux@tar.gz'
-    macOS_x64 'mil.army.usace.hec:javaHeclib:7-HK-macOSx@zip'
+    // HEC-Monolith and its runtime dependencies
+    implementation ('mil.army.usace.hec:hec-monolith:3.+') {
+        transitive = false
+    }
+    runtimeOnly 'mil.army.usace.hec:S10hmsPlugin:6.0.0.51'
+    runtimeOnly 'mil.army.usace.hec:images:1.0'
+    runtimeOnly 'com.google.flogger:flogger:0.7.4'
+    runtimeOnly 'com.google.flogger:flogger-system-backend:0.7.4'
+    runtimeOnly 'com.vividsolutions:jts:1.13'
+    // JavaHeclib
+    windows_x64 'mil.army.usace.hec:javaHeclib:7-IU-0-win-x86_64@zip'
+    linux_x64 'mil.army.usace.hec:javaHeclib:7-IU-0-linux-x86_64@tar.gz'
+    macOS_x64 'mil.army.usace.hec:javaHeclib:7-IU-0-macOS-x86_64-full@zip'
+    // JUnit
     testImplementation 'org.junit.jupiter:junit-jupiter:5.4.0'
 }
 
@@ -37,13 +45,13 @@ jar {
     }
 }
 
-task getNatives(type: Copy){
+tasks.register('getNatives', Copy) {
     if (OperatingSystem.current().isWindows()) {
         configurations.windows_x64.asFileTree.each {
             from(zipTree(it))
             into "$projectDir/x64"
         }
-    } else if (OperatingSystem.current().isLinux()){
+    } else if (OperatingSystem.current().isLinux()) {
         configurations.linux_x64.asFileTree.each {
             from(tarTree(it))
             into "$projectDir/x64"
@@ -56,13 +64,13 @@ task getNatives(type: Copy){
     }
 }
 
-task refreshNatives {
+tasks.register('refreshNatives') {
     destroyables.register("$projectDir/x64")
     doLast {
         delete("$projectDir/x64")
     }
+    finalizedBy(getNatives)
 }
-refreshNatives.finalizedBy(getNatives)
 
 test {
     if (OperatingSystem.current().isWindows()) {
