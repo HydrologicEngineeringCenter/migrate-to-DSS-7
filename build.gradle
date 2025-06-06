@@ -22,17 +22,18 @@ repositories {
 
 dependencies {
     implementation 'commons-cli:commons-cli:1.4'
-    // HEC-Monolith and its runtime dependencies
+    // HEC-Monolith and its dependencies
     implementation ('mil.army.usace.hec:hec-monolith:3.+') {
         transitive = false
     }
+    implementation 'mil.army.usace.hec:hec-nucleus-data:2.+'
     runtimeOnly 'mil.army.usace.hec:S10hmsPlugin:6.0.0.51'
     runtimeOnly 'mil.army.usace.hec:images:1.0'
     runtimeOnly 'com.google.flogger:flogger:0.7.4'
     runtimeOnly 'com.google.flogger:flogger-system-backend:0.7.4'
     runtimeOnly 'com.vividsolutions:jts:1.13'
     // JavaHeclib
-    windows_x64 'mil.army.usace.hec:javaHeclib:7-IU-0-win-x86_64@zip'
+    windows_x64 'mil.army.usace.hec:javaHeclib:7-IU-16-win-x86_64@zip'
     linux_x64 'mil.army.usace.hec:javaHeclib:7-IU-0-linux-x86_64@tar.gz'
     macOS_x64 'mil.army.usace.hec:javaHeclib:7-IU-0-macOS-x86_64-full@zip'
     // JUnit
