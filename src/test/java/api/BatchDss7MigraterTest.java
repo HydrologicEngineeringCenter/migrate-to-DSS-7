@@ -1,3 +1,5 @@
+package api;
+
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -8,8 +10,6 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class BatchDss7MigraterTest {
     private static final Logger logger = Logger.getLogger(BatchDss7Migrater.class.getName());
