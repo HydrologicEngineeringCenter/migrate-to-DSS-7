@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+# Getting 'APP_HOME'
+APP_HOME="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# Setting 'NATIVES_FOLDER' & 'LIB_FOLDER'
+NATIVES_FOLDER="$APP_HOME/natives"
+LIB_FOLDER="$APP_HOME/lib"
+
+# <<< Replace this line via script/template for Java path >>>
+JAVA_EXE="__REPLACE_WITH_JAVA_PATH__"
+if [[ "$JAVA_EXE" == "__REPLACE_WITH_JAVA_PATH__" ]]; then
+  JAVA_EXE="$NATIVES_FOLDER/jre/Contents/Home/bin/java"
+fi
+
+# Set Java lib path and options
+JAVA_LIB_PATH="$NATIVES_FOLDER:$NATIVES_FOLDER/javaHeclib"
+JAVA_LIB_OPT="-Djava.library.path=$JAVA_LIB_PATH"
+
+# Set program name
+PROG="api.MigrateToDss7"
+
+# Execute with provided args
+exec "$JAVA_EXE" $JAVA_LIB_OPT -classpath "$LIB_FOLDER/*" "$PROG" "$@"

@@ -1,0 +1,87 @@
+name: Test Distribution
+
+on: [ push, pull_request ]
+
+jobs:
+  test-dist:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, macos-13, windows-latest ]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Build distribution (Unix)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          chmod +x gradlew
+          ./gradlew clean packageDistribution --no-daemon
+
+      - name: Build distribution (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: .\gradlew.bat clean packageDistribution --no-daemon
+
+      - name: Extract distribution (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          mkdir dist
+          tar -xzf build/distributions/migrate-to-dss-7.tar.gz -C dist
+
+      - name: Extract distribution (macOS)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          mkdir dist
+          unzip -q build/distributions/migrate-to-dss-7.zip -d dist
+
+      - name: Extract distribution (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path dist -Force | Out-Null
+          Expand-Archive -Path build\distributions\migrate-to-dss-7.zip -DestinationPath dist -Force
+
+      - name: Add migrate-to-dss-7 to PATH (Unix/macOS)
+        if: runner.os != 'Windows'
+        run: |
+          echo "${{ github.workspace }}/dist/migrate-to-dss-7/bin" >> $GITHUB_PATH
+
+      - name: Add migrate-to-dss-7 to PATH (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          echo "${{ github.workspace }}\dist\migrate-to-dss-7\bin" >> $Env:GITHUB_PATH      
+
+      - name: Run migration & verify (Linux/macOS)
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          migrate-to-dss-7 -p test-data/forecast-v6.dss
+          VER=$(migrate-to-dss-7 -v test-data/forecast-v6.dss)
+          test "$VER" = "7"
+
+      - name: Run migration & verify (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          migrate-to-dss-7 -p test-data\forecast-v6.dss
+          $ver = migrate-to-dss-7 -v test-data\forecast-v6.dss
+          if ($ver -ne '7') { throw "Expected version 7, got $ver" }
+
+      - name: Upload distribution artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: migrator-${{ matrix.os }}
+          path: build/distributions/**

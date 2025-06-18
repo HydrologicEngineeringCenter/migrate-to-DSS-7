@@ -1,3 +1,6 @@
+package api;
+
+import hec.heclib.dss.HecDSSFileAccess;
 import org.apache.commons.cli.*;
 
 import java.io.IOException;
@@ -16,6 +19,14 @@ public class MigrateToDss7 {
     public static void main(String[] args) {
         Options options = new Options();
         options.addOption( "d", "directory", true, "Migrate files in the specified directory.");
+        options.addOption("v", "version", true, "Print DSS version for a specified DSS file.");
+
+        Option multiPaths = Option.builder("p")
+                .longOpt("paths")
+                .hasArgs() // unlimited args
+                .desc("Path to files, take multiple space-separated values")
+                .build();
+        options.addOption(multiPaths);
 
         CommandLineParser parser = new DefaultParser();
 
@@ -44,6 +55,14 @@ public class MigrateToDss7 {
                 BatchDss7Migrater migrater = BatchDss7Migrater.create(paths);
                 migrater.migrate();
 
+            } else if (cmd.hasOption("p")) {
+                Set<String> paths = Set.of(cmd.getOptionValues("p"));
+                BatchDss7Migrater migrater = BatchDss7Migrater.create(paths);
+                migrater.migrate();
+            } else if (cmd.hasOption("v")) {
+                String dssFilename = cmd.getOptionValue("v");
+                int version = HecDSSFileAccess.getDssFileVersion(dssFilename);
+                System.out.println(version);
             }
         } catch (ParseException e) {
             logger.log(Level.SEVERE, e, e::getMessage);

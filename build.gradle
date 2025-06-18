@@ -2,10 +2,20 @@ import org.gradle.internal.os.OperatingSystem
 
 plugins {
     id 'java'
+    id 'application'
+    id 'distribution'
 }
 
-group 'org.example'
+group 'mil.army.usace.hec'
 version '1.0-SNAPSHOT'
+
+application {
+    applicationName = 'migrate-to-dss-7'
+    mainClass.set('api.MigrateToDss7')
+    startScripts {
+        enabled = false
+    }
+}
 
 configurations {
     windows_x64
@@ -14,60 +24,120 @@ configurations {
 }
 
 repositories {
-    maven {
-        url "https://www.hec.usace.army.mil/nexus/repository/maven-public/"
-    }
+    maven { url "https://www.hec.usace.army.mil/nexus/repository/maven-public/" }
     mavenCentral()
 }
 
 dependencies {
     implementation 'commons-cli:commons-cli:1.4'
-    implementation 'mil.army.usace.hec:hec:6.0.0.51'
-    implementation 'mil.army.usace.hec:heclib:6.0.0.51'
-    runtimeOnly 'com.rmanet:rma:6.0.0.51'
-    windows_x64 'mil.army.usace.hec:javaHeclib:7-HK@zip'
-    linux_x64 'mil.army.usace.hec:javaHeclib:7-HK:linux@tar.gz'
-    macOS_x64 'mil.army.usace.hec:javaHeclib:7-HK-macOSx@zip'
+    // HEC-Monolith and its dependencies
+    implementation ('mil.army.usace.hec:hec-monolith:3.+') {
+        transitive = false
+    }
+    implementation 'mil.army.usace.hec:hec-nucleus-data:2.+'
+    runtimeOnly 'mil.army.usace.hec:S10hmsPlugin:6.0.0.51'
+    runtimeOnly 'mil.army.usace.hec:images:1.0'
+    runtimeOnly 'com.google.flogger:flogger:0.7.4'
+    runtimeOnly 'com.google.flogger:flogger-system-backend:0.7.4'
+    runtimeOnly 'com.vividsolutions:jts:1.13'
+    // JavaHeclib
+    windows_x64 'mil.army.usace.hec:javaHeclib:7-IU-0-win-x86_64@zip'
+    linux_x64 'mil.army.usace.hec:javaHeclib:7-IU-0-linux-x86_64@tar.gz'
+    macOS_x64 'mil.army.usace.hec:javaHeclib:7-IU-0-macOS-x86_64-full@zip'
+    // JRE
+    windows_x64 'net.adoptium:jre:17.0.11_9:win-x64@zip'
+    linux_x64 'net.adoptium:jre:17.0.11_9:linux-x64@tar.gz'
+    macOS_x64 'net.adoptium:jre:17.0.11_9:macOS-x64@zip'
+    // JUnit
     testImplementation 'org.junit.jupiter:junit-jupiter:5.4.0'
 }
 
-jar {
-    from {
-        configurations.runtime.collect { it.isDirectory() ? it : zipTree(it) }
-    }
-}
+def nativesDir = "$projectDir/natives"
 
-task getNatives(type: Copy){
+tasks.register('getNatives', Copy) {
     if (OperatingSystem.current().isWindows()) {
         configurations.windows_x64.asFileTree.each {
             from(zipTree(it))
-            into "$projectDir/x64"
+            into(nativesDir)
         }
-    } else if (OperatingSystem.current().isLinux()){
+    } else if (OperatingSystem.current().isLinux()) {
         configurations.linux_x64.asFileTree.each {
             from(tarTree(it))
-            into "$projectDir/x64"
+            into(nativesDir)
         }
     } else if (OperatingSystem.current().isMacOsX()) {
         configurations.macOS_x64.asFileTree.each {
             from(zipTree(it))
-            into "$projectDir/x64"
+            into(nativesDir)
         }
     }
 }
 
-task refreshNatives {
-    destroyables.register("$projectDir/x64")
+tasks.register('refreshNatives') {
+    destroyables.register(nativesDir)
     doLast {
-        delete("$projectDir/x64")
+        delete(nativesDir)
+    }
+    finalizedBy(getNatives)
+}
+
+tasks.matching { it.name in ['installDist','distZip','distTar'] }.configureEach { dependsOn 'refreshNatives' }
+
+distributions {
+    main {
+        contents {
+            // Copying natives
+            from(nativesDir) {
+                into 'natives'
+            }
+            // Copying executable scripts (0755 - executable)
+            if (OperatingSystem.current().isLinux()) {
+                from('package/linux') {
+                    into('bin')
+                    fileMode = 0755
+                }
+            } else if (OperatingSystem.current().isMacOsX()) {
+                from('package/macOS') {
+                    into('bin')
+                    fileMode = 0755
+                }
+            } else if (OperatingSystem.current().isWindows()) {
+                from('package/windows') {
+                    into('bin')
+                    fileMode = 0755
+                }
+            }
+        }
     }
 }
-refreshNatives.finalizedBy(getNatives)
 
 test {
     if (OperatingSystem.current().isWindows()) {
         useJUnitPlatform()
         ignoreFailures = true
-        jvmArgs = ["-Djava.library.path=${projectDir}/x64"]
+        jvmArgs = ["-Djava.library.path=${nativesDir}"]
+    }
+}
+
+// Packaging
+tasks.named('distZip', Zip) {
+    archiveVersion.set('')  // drop the “-<version>” suffix
+}
+
+tasks.named('distTar', Tar) {
+    archiveVersion.set('')
+    compression = Compression.GZIP
+    extension('tar.gz')
+}
+
+tasks.register('packageDistribution') {
+    description = 'Builds the application distribution: ZIP on macOS/Windows, TAR.GZ on Linux'
+    group = 'distribution'
+    dependsOn 'installDist'
+
+    if (OperatingSystem.current().isLinux()) {
+        dependsOn 'distTar'
+    } else {
+        dependsOn 'distZip'
     }
 }

@@ -1,3 +1,5 @@
+package api;
+
 import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.time.Duration;
@@ -25,7 +27,7 @@ public class BatchDss7Migrater {
     public void migrate() {
         AtomicInteger count = new AtomicInteger();
         Instant start = Instant.now();
-        paths.parallelStream().forEach(path -> {
+        paths.forEach(path -> {
             Dss7Migrater migrater = Dss7Migrater.create(path);
             migrater.addPropertyChangeListener(evt -> count.incrementAndGet());
             migrater.migrate();
