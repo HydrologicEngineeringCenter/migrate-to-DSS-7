@@ -20,9 +20,8 @@ if "%JAVA_EXE%"=="__REPLACE_WITH_JAVA_PATH__" (
 
 REM Set Java lib path and program class
 set "JAVA_LIB_PATH=%NATIVES_FOLDER%;%NATIVES_FOLDER%\javaHeclib"
-set "JAVA_LIB_OPT=-Djava.library.path=%JAVA_LIB_PATH%"
 set "PROG=api.MigrateToDss7"
 
 REM Execute silently
-"%JAVA_EXE%" %JAVA_LIB_OPT% -classpath "%LIB_FOLDER%\*" %PROG% %*
+"%JAVA_EXE%" "-Djava.library.path=%JAVA_LIB_PATH%" -classpath "%LIB_FOLDER%\*" %PROG% %*
 endlocal & exit /b %errorlevel%
