@@ -1,7 +1,7 @@
-#!/usr/bin/env bash
+#!/bin/zsh
 
 # Getting 'APP_HOME'
-APP_HOME="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+APP_HOME="$(cd "${0:h}/.." && pwd)"
 
 # Setting 'NATIVES_FOLDER' & 'LIB_FOLDER'
 NATIVES_FOLDER="$APP_HOME/natives"
